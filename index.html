@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crack the Code</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        /* General Styles */
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background-color: #0a0f18; /* Deep dark blue */
+            color: #00ffcc; /* Neon cyan/teal */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-x: hidden; /* Prevent horizontal scroll */
+        }
+
+        .game-container {
+            background-color: #101827; /* Slightly lighter dark blue */
+            border: 2px solid #00ffcc;
+            box-shadow: 0 0 20px #00ffcc, inset 0 0 15px rgba(0, 255, 204, 0.3);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            width: 100%;
+            max-width: 500px; /* Max width for larger screens */
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            color: #ff4500; /* Bright orange for contrast */
+            text-shadow: 0 0 10px #ff4500;
+            margin-bottom: 25px;
+            font-size: 2em; /* Responsive font size */
+        }
+
+        /* Lock Display */
+        .lock-display {
+            display: flex;
+            justify-content: center;
+            gap: 10px; /* Space between wheels */
+            margin-bottom: 25px;
+        }
+
+        .digit-wheel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #080c13; /* Very dark blue */
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #007766; /* Darker teal */
+        }
+
+        .arrow {
+            background: none;
+            border: none;
+            color: #00ffcc;
+            font-size: 1.5em; /* Larger arrows for easier touch */
+            cursor: pointer;
+            padding: 5px; /* Touch area */
+            transition: color 0.2s ease, transform 0.2s ease;
+        }
+        .arrow:hover {
+            color: #ff4500;
+            transform: scale(1.2);
+        }
+        .arrow:active {
+            transform: scale(1.1);
+        }
+
+        .digit-value {
+            font-size: 2.5em; /* Large digit display */
+            font-weight: bold;
+            color: #ffffff; /* White for digits */
+            background-color: #000000;
+            padding: 10px 15px;
+            margin: 5px 0;
+            border-radius: 5px;
+            min-width: 40px; /* Ensure consistent width */
+            text-align: center;
+            border: 1px solid #00ffcc;
+        }
+
+        /* Controls */
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column; /* Stack buttons on small screens */
+            gap: 10px;
+            align-items: center;
+        }
+
+        .action-button {
+            font-family: 'Orbitron', sans-serif;
+            background-color: #ff4500; /* Bright orange */
+            color: #0a0f18; /* Dark blue text */
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 0 10px rgba(255, 69, 0, 0.5);
+            width: 80%; /* Responsive width */
+            max-width: 200px; /* Max button width */
+        }
+        .action-button:hover {
+            background-color: #ff6a33; /* Lighter orange */
+            box-shadow: 0 0 15px rgba(255, 69, 0, 0.8);
+        }
+        .action-button:disabled {
+            background-color: #555;
+            color: #888;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* Feedback Area */
+        .feedback {
+            background-color: #080c13;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border: 1px dashed #007766;
+        }
+        .feedback p {
+            margin: 8px 0;
+            font-size: 0.9em;
+            color: #99ffee; /* Lighter teal for feedback text */
+        }
+        .feedback p strong {
+            color: #ffffff;
+        }
+        #intel-message {
+            font-style: italic;
+            color: #ffc107; /* Amber for intel */
+        }
+
+        /* Game Over / Animation Container */
+        .animation-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .game-over-message {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5em; /* Large message */
+            color: #fff;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        #play-again-button {
+            font-family: 'Orbitron', sans-serif;
+            background-color: #00ffcc; /* Teal */
+            color: #0a0f18;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        #play-again-button:hover {
+            background-color: #33ffee;
+            transform: scale(1.05);
+        }
+
+        /* Explosion Animation */
+        .explosion {
+            width: 200px; /* Initial size */
+            height: 200px;
+            border-radius: 50%;
+            background-color: orange;
+            position: relative;
+            animation: explode 0.7s forwards;
+        }
+        .explosion::before, .explosion::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: red;
+            animation: explode-inner 0.7s forwards;
+        }
+        .explosion::after {
+            background: yellow;
+            animation-delay: 0.1s;
+        }
+        @keyframes explode {
+            0% { transform: scale(0); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.8; }
+            100% { transform: scale(2.5); opacity: 0; }
+        }
+        @keyframes explode-inner {
+            0% { transform: scale(0); opacity: 1; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+
+        /* Celebration Animation (Confetti) */
+        .confetti-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            overflow: hidden;
+            pointer-events: none; /* Allow clicks through */
+        }
+        .confetti {
+            width: 10px;
+            height: 20px;
+            background-color: #00ffcc; /* Teal */
+            position: absolute;
+            opacity: 0;
+            animation: fall 4s linear infinite;
+        }
+        .confetti.c2 { background-color: #ff4500; animation-delay: -0.5s; } /* Orange */
+        .confetti.c3 { background-color: #ffd700; animation-delay: -1s; } /* Gold */
+        .confetti.c4 { background-color: #00e676; animation-delay: -1.5s; } /* Green */
+        .confetti.c5 { background-color: #ff1493; animation-delay: -2s; } /* Deep Pink */
+
+        @keyframes fall {
+            0% {
+                transform: translateY(-10vh) rotateZ(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(110vh) rotateZ(720deg);
+                opacity: 0;
+            }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 480px) {
+            h1 { font-size: 1.8em; }
+            .digit-value { font-size: 2em; padding: 8px 12px; }
+            .arrow { font-size: 1.3em; }
+            .action-button { font-size: 0.9em; padding: 10px 15px; width: 90%; }
+            .game-over-message { font-size: 1.8em; }
+            #play-again-button { font-size: 1em; padding: 12px 25px; }
+            .lock-display { gap: 5px; } /* Tighter spacing on small screens */
+            .digit-wheel { padding: 5px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Crack the Code</h1>
+
+        <div class="lock-display">
+            <div class="digit-wheel">
+                <button class="arrow up-arrow" data-index="0" aria-label="Increase digit 1">&#9650;</button>
+                <div class="digit-value" id="digit-0">0</div>
+                <button class="arrow down-arrow" data-index="0" aria-label="Decrease digit 1">&#9660;</button>
+            </div>
+            <div class="digit-wheel">
+                <button class="arrow up-arrow" data-index="1" aria-label="Increase digit 2">&#9650;</button>
+                <div class="digit-value" id="digit-1">0</div>
+                <button class="arrow down-arrow" data-index="1" aria-label="Decrease digit 2">&#9660;</button>
+            </div>
+            <div class="digit-wheel">
+                <button class="arrow up-arrow" data-index="2" aria-label="Increase digit 3">&#9650;</button>
+                <div class="digit-value" id="digit-2">0</div>
+                <button class="arrow down-arrow" data-index="2" aria-label="Decrease digit 3">&#9660;</button>
+            </div>
+            <div class="digit-wheel">
+                <button class="arrow up-arrow" data-index="3" aria-label="Increase digit 4">&#9650;</button>
+                <div class="digit-value" id="digit-3">0</div>
+                <button class="arrow down-arrow" data-index="3" aria-label="Decrease digit 4">&#9660;</button>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="unlock-button" class="action-button">ATTEMPT UNLOCK</button>
+            <button id="intel-button" class="action-button">REQUEST INTEL (1 Left)</button>
+        </div>
+
+        <div class="feedback">
+            <p>Guesses Remaining: <strong id="guesses-left">12</strong></p>
+            <p>Total Correct Digits: <strong id="digits-correct-feedback">-</strong></p>
+            <p>Digits in Correct Position: <strong id="position-correct-feedback">-</strong></p>
+            <p id="intel-message"></p>
+        </div>
+    </div>
+
+    <div class="animation-container" id="animation-container">
+        <div id="confetti-area" class="confetti-container"></div>
+        <div id="animation-effect"></div>
+        <div id="game-over-text" class="game-over-message"></div>
+        <button id="play-again-button">Play Again</button>
+    </div>
+
+    <script>
+        // --- DOM Elements ---
+        const digitDisplays = [
+            document.getElementById('digit-0'),
+            document.getElementById('digit-1'),
+            document.getElementById('digit-2'),
+            document.getElementById('digit-3')
+        ];
+        const upArrows = document.querySelectorAll('.up-arrow');
+        const downArrows = document.querySelectorAll('.down-arrow');
+        const unlockButton = document.getElementById('unlock-button');
+        const intelButton = document.getElementById('intel-button');
+        const guessesLeftDisplay = document.getElementById('guesses-left');
+        const digitsCorrectFeedbackDisplay = document.getElementById('digits-correct-feedback');
+        const positionCorrectFeedbackDisplay = document.getElementById('position-correct-feedback');
+        const intelMessageDisplay = document.getElementById('intel-message');
+        const animationContainer = document.getElementById('animation-container');
+        const gameOverText = document.getElementById('game-over-text');
+        const playAgainButton = document.getElementById('play-again-button');
+        const animationEffect = document.getElementById('animation-effect');
+        const confettiArea = document.getElementById('confetti-area');
+
+        // --- Game State Variables ---
+        let secretCode = [];
+        let currentGuess = [0, 0, 0, 0];
+        let guessesLeft = 12;
+        let intelUsed = false;
+        const MAX_GUESSES = 12;
+
+        // --- Audio State and Synths (Tone.js) ---
+        let audioInitialized = false;
+        let audioInitializing = false;
+        let tickSynth, explosionSynth, victorySynth, tickingLoop;
+        let explosionFilter;
+
+        async function tryInitAudio() {
+            if (audioInitialized || audioInitializing) return;
+            audioInitializing = true;
+            try {
+                await Tone.start();
+                console.log("Audio context started.");
+
+                tickSynth = new Tone.MembraneSynth({
+                    pitchDecay: 0.01, octaves: 2, oscillator: { type: "sine" },
+                    envelope: { attack: 0.001, decay: 0.2, sustain: 0.01, release: 0.01, attackCurve: "exponential" }
+                }).toDestination();
+
+                tickingLoop = new Tone.Loop(time => {
+                    tickSynth.triggerAttackRelease("C1", "32n", time);
+                }, "1s");
+
+                explosionSynth = new Tone.NoiseSynth({
+                    noise: { type: 'white' },
+                    envelope: { attack: 0.005, decay: 0.8, sustain: 0, release: 1 }
+                });
+                explosionFilter = new Tone.AutoFilter({
+                    frequency: "2n", baseFrequency: 200, octaves: 4
+                }).toDestination();
+                explosionFilter.start();
+                explosionSynth.connect(explosionFilter);
+
+                victorySynth = new Tone.PolySynth(Tone.FMSynth, {
+                    harmonicity: 2.5, modulationIndex: 8,
+                    envelope: { attack: 0.01, decay: 0.4, sustain: 0.1, release: 0.8 },
+                    modulationEnvelope: { attack: 0.01, decay: 0.2, sustain: 0.01, release: 0.5 }
+                }).toDestination();
+
+                audioInitialized = true;
+                console.log("Audio synths initialized.");
+            } catch (e) {
+                console.error("Error starting Tone.js or initializing synths:", e);
+            } finally {
+                audioInitializing = false;
+            }
+        }
+
+        function startTicking() {
+            if (audioInitialized && tickingLoop && Tone.Transport.state !== 'started') {
+                Tone.Transport.start();
+                tickingLoop.start(0);
+            }
+        }
+
+        /**
+         * Stops the ticking sound effect and clears transport.
+         * Made more robust to check for object/state existence.
+         */
+        function stopTicking() {
+            if (audioInitialized && typeof Tone !== 'undefined' && Tone.Transport) {
+                if (tickingLoop && typeof tickingLoop.state !== 'undefined' && tickingLoop.state === "started") {
+                    tickingLoop.stop(0);
+                }
+                if (Tone.Transport.state === "started") {
+                    Tone.Transport.stop(0);
+                    Tone.Transport.cancel(0);
+                }
+                // console.log("Ticking stopped or was not active.");
+            }
+        }
+
+        function generateSecretCode() {
+            secretCode = Array.from({ length: 4 }, () => Math.floor(Math.random() * 10));
+            // console.log("Secret Code (for testing):", secretCode);
+        }
+
+        function updateDigitDisplay(index, value) {
+            digitDisplays[index].textContent = value;
+        }
+
+        async function changeDigit(index, direction) {
+            if (!audioInitialized && !audioInitializing) {
+                await tryInitAudio();
+            }
+            if (unlockButton.disabled && guessesLeft > 0) return;
+            currentGuess[index] += direction;
+            if (currentGuess[index] > 9) currentGuess[index] = 0;
+            else if (currentGuess[index] < 0) currentGuess[index] = 9;
+            updateDigitDisplay(index, currentGuess[index]);
+        }
+
+        function generateClue() {
+            const clueType = Math.floor(Math.random() * 5);
+            let clue = "";
+            // (Clue generation logic remains the same)
+            switch (clueType) {
+                case 0:
+                    let absentDigit;
+                    let attempts = 0;
+                    do {
+                        absentDigit = Math.floor(Math.random() * 10);
+                        attempts++;
+                    } while (secretCode.includes(absentDigit) && attempts < 20);
+                    if (!secretCode.includes(absentDigit)) {
+                        clue = `Intel Report: The digit ${absentDigit} is NOT part of the code.`;
+                    } else {
+                        clue = `Intel Report: One of the digits is ${secretCode[Math.floor(Math.random() * 4)]}.`;
+                    }
+                    break;
+                case 1:
+                    const presentDigit = secretCode[Math.floor(Math.random() * 4)];
+                    clue = `Intel Report: The digit ${presentDigit} IS somewhere in the code.`;
+                    break;
+                case 2:
+                    const evenCount = secretCode.filter(digit => digit % 2 === 0).length;
+                    if (Math.random() < 0.5) {
+                        clue = `Intel Report: There are exactly ${evenCount} even digit(s) in the code.`;
+                    } else {
+                        clue = `Intel Report: There are exactly ${4 - evenCount} odd digit(s) in the code.`;
+                    }
+                    break;
+                case 3:
+                    if (Math.random() < 0.5) {
+                        clue = `Intel Report: The first digit is ${secretCode[0] % 2 === 0 ? 'even' : 'odd'}.`;
+                    } else {
+                        clue = `Intel Report: The last digit is ${secretCode[3] > 4 ? '5 or greater' : 'less than 5'}.`;
+                    }
+                    break;
+                case 4:
+                    let idx1 = Math.floor(Math.random() * 4);
+                    let idx2 = Math.floor(Math.random() * 4);
+                    while (idx1 === idx2) {
+                        idx2 = Math.floor(Math.random() * 4);
+                    }
+                    const sum = secretCode[idx1] + secretCode[idx2];
+                    clue = `Intel Report: The sum of two of the digits in the code is ${sum}.`;
+                    break;
+                default:
+                     clue = `Intel Report: One of the digits is ${secretCode[Math.floor(Math.random() * 4)]}.`;
+            }
+            return clue;
+        }
+
+        async function requestIntel() {
+            if (!audioInitialized && !audioInitializing) {
+                await tryInitAudio();
+            }
+            if (!intelUsed && guessesLeft > 0) {
+                intelUsed = true;
+                intelButton.textContent = "INTEL USED";
+                intelButton.disabled = true;
+                const clue = generateClue();
+                intelMessageDisplay.textContent = clue;
+            }
+        }
+
+        async function attemptUnlock() {
+            if (!audioInitialized && !audioInitializing) {
+                await tryInitAudio();
+            }
+            if (guessesLeft <= 0) return;
+            guessesLeft--;
+            guessesLeftDisplay.textContent = guessesLeft;
+
+            let tempSecretCode = [...secretCode];
+            let tempCurrentGuess = [...currentGuess];
+            let correctPositionCount = 0;
+            let correctDigitValueCount = 0;
+
+            for (let i = 0; i < 4; i++) {
+                if (tempCurrentGuess[i] === tempSecretCode[i]) {
+                    correctPositionCount++;
+                    tempCurrentGuess[i] = -1;
+                    tempSecretCode[i] = -2;
+                }
+            }
+            for (let i = 0; i < 4; i++) {
+                if (tempCurrentGuess[i] !== -1) {
+                    const guessedDigit = tempCurrentGuess[i];
+                    const indexInSecret = tempSecretCode.indexOf(guessedDigit);
+                    if (indexInSecret !== -1) {
+                        correctDigitValueCount++;
+                        tempSecretCode[indexInSecret] = -2;
+                    }
+                }
+            }
+            digitsCorrectFeedbackDisplay.textContent = correctPositionCount + correctDigitValueCount;
+            positionCorrectFeedbackDisplay.textContent = correctPositionCount;
+
+            if (correctPositionCount === 4) {
+                handleWin();
+            } else if (guessesLeft === 0) {
+                handleLose();
+            } else {
+                if (audioInitialized) startTicking();
+            }
+            unlockButton.style.transform = 'scale(0.95)';
+            setTimeout(() => { unlockButton.style.transform = 'scale(1)'; }, 150);
+        }
+
+        function createConfetti() {
+            confettiArea.innerHTML = '';
+            const colors = ['#00ffcc', '#ff4500', '#ffd700', '#00e676', '#ff1493'];
+            for (let i = 0; i < 100; i++) {
+                const confettiPiece = document.createElement('div');
+                confettiPiece.classList.add('confetti');
+                confettiPiece.style.left = Math.random() * 100 + 'vw';
+                confettiPiece.style.animationDuration = (Math.random() * 2 + 3) + 's';
+                confettiPiece.style.animationDelay = Math.random() * 2 + 's';
+                confettiPiece.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                if (Math.random() > 0.5) {
+                    confettiPiece.style.height = '15px';
+                    confettiPiece.style.width = '8px';
+                }
+                confettiArea.appendChild(confettiPiece);
+            }
+        }
+
+        function handleWin() {
+            stopTicking();
+            if (audioInitialized && victorySynth) {
+                const now = Tone.now();
+                victorySynth.triggerAttackRelease("C4", "8n", now);
+                victorySynth.triggerAttackRelease("E4", "8n", now + 0.15);
+                victorySynth.triggerAttackRelease("G4", "8n", now + 0.3);
+                victorySynth.triggerAttackRelease("C5", "2n", now + 0.45);
+            }
+            gameOverText.textContent = "ACCESS GRANTED! You saved the world!";
+            gameOverText.style.color = "#00ff00";
+            animationEffect.innerHTML = '';
+            createConfetti();
+            animationContainer.style.display = 'flex';
+            unlockButton.disabled = true;
+            intelButton.disabled = true;
+        }
+
+        function handleLose() {
+            stopTicking();
+            if (audioInitialized && explosionSynth) {
+                explosionSynth.triggerAttackRelease("2n");
+            }
+            gameOverText.textContent = `MISSION FAILED! The code was: ${secretCode.join('')}`;
+            gameOverText.style.color = "#ff0000";
+            confettiArea.innerHTML = '';
+            animationEffect.innerHTML = '<div class="explosion"></div>';
+            animationContainer.style.display = 'flex';
+            unlockButton.disabled = true;
+            intelButton.disabled = true;
+        }
+
+        /**
+         * Initializes or resets the game.
+         */
+        function startGame() {
+            // ADDED: Console log for debugging the Play Again button.
+            console.log("startGame function initiated by Play Again button.");
+
+            stopTicking(); // Stop any ticking from previous game
+
+            generateSecretCode();
+            currentGuess = [0, 0, 0, 0];
+            guessesLeft = MAX_GUESSES;
+            intelUsed = false;
+
+            // Reset UI
+            digitDisplays.forEach((display, index) => updateDigitDisplay(index, 0));
+            guessesLeftDisplay.textContent = guessesLeft;
+            digitsCorrectFeedbackDisplay.textContent = "-";
+            positionCorrectFeedbackDisplay.textContent = "-";
+            intelMessageDisplay.textContent = "";
+
+            unlockButton.disabled = false;
+            intelButton.disabled = false;
+            intelButton.textContent = "REQUEST INTEL (1 Left)";
+
+            // This is crucial for hiding the game over screen
+            if (animationContainer) { // Check if animationContainer is valid
+                animationContainer.style.display = 'none';
+            } else {
+                console.error("animationContainer is not found in startGame!");
+            }
+            
+            if(animationEffect) animationEffect.innerHTML = '';
+            if(confettiArea) confettiArea.innerHTML = '';
+        }
+
+        // --- Event Listeners ---
+        upArrows.forEach(arrow => {
+            arrow.addEventListener('click', () => {
+                const index = parseInt(arrow.dataset.index);
+                changeDigit(index, 1);
+            });
+        });
+
+        downArrows.forEach(arrow => {
+            arrow.addEventListener('click', () => {
+                const index = parseInt(arrow.dataset.index);
+                changeDigit(index, -1);
+            });
+        });
+
+        unlockButton.addEventListener('click', attemptUnlock);
+        intelButton.addEventListener('click', requestIntel);
+        playAgainButton.addEventListener('click', startGame);
+
+        // --- Initial Game Start ---
+        startGame(); // Initial call to set up the first game
+    </script>
+</body>
+</html>
